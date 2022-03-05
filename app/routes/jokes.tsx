@@ -1,5 +1,6 @@
 import { Joke } from '@prisma/client';
-import { LinksFunction, LoaderFunction, useLoaderData } from 'remix';
+import type { LoaderFunction } from 'remix';
+import { LinksFunction, useLoaderData } from 'remix';
 import { Outlet, Link } from 'remix';
 
 import stylesUrl from '~/styles/jokes.css';
