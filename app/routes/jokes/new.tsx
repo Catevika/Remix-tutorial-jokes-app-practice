@@ -26,12 +26,12 @@ type ActionData = {
 	};
 };
 
-export let action: ActionFunction = async ({
+export const action: ActionFunction = async ({
 	request
 }): Promise<Response | ActionData> => {
-	let form = await request.formData();
-	let name = form.get('name');
-	let content = form.get('content');
+	const form = await request.formData();
+	const name = form.get('name');
+	const content = form.get('content');
 
 	if (typeof name !== 'string' || typeof content !== 'string') {
 		return {
@@ -39,7 +39,7 @@ export let action: ActionFunction = async ({
 		};
 	}
 
-	let fieldErrors = {
+	const fieldErrors = {
 		name: validateJokeName(name),
 		content: validateJokeContent(content)
 	};
@@ -48,14 +48,14 @@ export let action: ActionFunction = async ({
 		return { fieldErrors, fields: { name, content } };
 	}
 
-	let joke = await db.joke.create({
+	const joke = await db.joke.create({
 		data: { name, content }
 	});
 	return redirect(`/jokes/${joke.id}`);
 };
 
 export default function NewJokeRoute() {
-	let actionData = useActionData<ActionData>();
+	const actionData = useActionData<ActionData>();
 	return (
 		<div>
 			<p>Add your own hilarious joke</p>

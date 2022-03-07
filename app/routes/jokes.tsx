@@ -12,9 +12,9 @@ export const links: LinksFunction = () => {
 
 type LoaderData = { jokeListItems: Array<Pick<Joke, 'id' | 'name'>> };
 
-export let loader: LoaderFunction = async () => {
+export const loader: LoaderFunction = async () => {
 	// * With Prisma
-	let jokeListItems = await db.joke.findMany({
+	const jokeListItems = await db.joke.findMany({
 		take: 5,
 		select: {
 			id: true,
@@ -23,14 +23,14 @@ export let loader: LoaderFunction = async () => {
 		orderBy: { createdAt: 'desc' }
 	});
 	// * Without Prisma
-	// let jokes = await db.joke.findMany();
-	//let jokeListItems = jokes.map((joke) => ({ id: joke.id, name: joke.name }));
-	let data: LoaderData = { jokeListItems };
+	// const jokes = await db.joke.findMany();
+	//const jokeListItems = jokes.map((joke) => ({ id: joke.id, name: joke.name }));
+	const data: LoaderData = { jokeListItems };
 	return data;
 };
 
 export default function JokesRoute() {
-	let data = useLoaderData<LoaderData>();
+	const data = useLoaderData<LoaderData>();
 	return (
 		<div className='jokes-layout'>
 			<header className='jokes-header'>
