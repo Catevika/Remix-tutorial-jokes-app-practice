@@ -2,7 +2,7 @@ import type { ActionFunction, LinksFunction } from 'remix';
 import { useActionData, json, Link, useSearchParams } from 'remix';
 
 import { db } from '~/utils/db.server';
-import { createUserSession, login } from '~/utils/session.server';
+import { createUserSession, login, register } from '~/utils/session.server';
 import stylesUrl from '~/styles/login.css';
 
 export const links: LinksFunction = () => {
@@ -11,13 +11,13 @@ export const links: LinksFunction = () => {
 
 function validateUsername(username: unknown) {
 	if (typeof username !== 'string' || username.length < 3) {
-		return `Usernames must be at least 3 characters long`;
+		return 'Usernames must be at least 3 characters long';
 	}
 }
 
 function validatePassword(password: unknown) {
 	if (typeof password !== 'string' || password.length < 6) {
-		return `Passwords must be at least 6 characters long`;
+		return 'Passwords must be at least 6 characters long';
 	}
 }
 
@@ -49,7 +49,7 @@ export const action: ActionFunction = async ({ request }) => {
 		typeof redirectTo !== 'string'
 	) {
 		return badRequest({
-			formError: `Form not submitted correctly.`
+			formError: 'Form not submitted correctly.'
 		});
 	}
 
@@ -89,12 +89,8 @@ export const action: ActionFunction = async ({ request }) => {
 					formError: `User with username ${username} already exists`
 				});
 			}
-			// create the user
-			// create their session and redirect to /jokes
-			return badRequest({
-				fields,
-				formError: 'Not implemented'
-			});
+			let user = await register({ username, password });
+			return createUserSession(user.id, redirectTo);
 		}
 		default: {
 			return badRequest({

@@ -8,6 +8,17 @@ type LoginForm = {
   password: string;
 };
 
+export async function register({ username, password }: LoginForm) {
+  const passwordHash = await bcrypt.hash(password, 10);
+  const user = await db.user.create({
+    data: {
+      username,
+      passwordHash
+    }
+  });
+  return user;
+}
+
 export async function login({
   username,
   password,
@@ -42,6 +53,47 @@ const storage = createCookieSessionStorage({
     secrets: [sessionSecret]
   }
 });
+
+function getUserSession(request: Request) {
+  return storage.getSession(request.headers.get('Cookie'));
+}
+
+// get the UserId if the user is already logged in
+export async function getUserId(request: Request) {
+  const session = await getUserSession(request);
+  const userId = session.get('userId');
+  if (!userId || typeof userId !== 'string') return null;
+  return userId;
+}
+
+// send to the login page when required by a protected route and redirect to the before page once logged in
+export async function requireUserId(request: Request, redirectTo: string = new URL(request.url).pathname) {
+  const session = await getUserSession(request);
+  const userId = session.get('userId');
+  if (!userId || typeof userId !== 'string') {
+    const searchParams = new URLSearchParams([
+      ['redirectTo', redirectTo],
+    ]);
+    throw redirect(`/login?${searchParams}`);
+  }
+  return userId;
+}
+
+export async function getUser(request: Request) {
+  const session = await getUserSession(request);
+  const userId = session.get('userId');
+  if (!userId) return null;
+  return db.user.findUnique({ where: { id: userId } });
+}
+
+export async function logout(request: Request) {
+  const session = await getUserSession(request);
+  return redirect('/login', {
+    headers: {
+      'Set-Cookie': await storage.destroySession(session),
+    },
+  });
+}
 
 export async function createUserSession(userId: string, redirectTo: string) {
   const session = await storage.getSession();
