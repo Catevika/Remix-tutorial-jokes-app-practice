@@ -1,9 +1,11 @@
-import { LinksFunction, Meta, MetaFunction } from 'remix';
+import { LinksFunction, Meta, MetaFunction, Scripts } from 'remix';
 import { Links, LiveReload, Outlet, useCatch } from 'remix';
 
 import globalStylesUrl from './styles/global.css';
 import globalMediumStylesUrl from './styles/global-medium.css';
 import globalLargeStylesUrl from './styles/global-large.css';
+
+// NOTE: Scripts from Remix includes JavaScript but all the application is available before Javascript loads because all is server side rendered
 
 export const links: LinksFunction = () => {
 	return [
@@ -56,6 +58,7 @@ function Document({
 			<body>
 				{children}
 				{process.env.NODE_ENV === 'development' && <LiveReload />}
+				<Scripts />
 			</body>
 		</html>
 	);

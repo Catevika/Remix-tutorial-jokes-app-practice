@@ -1,7 +1,16 @@
-import { ActionFunction, json, Link, LoaderFunction, useCatch } from 'remix';
+import {
+	ActionFunction,
+	json,
+	Link,
+	LoaderFunction,
+	useCatch,
+	Form
+} from 'remix';
 import { redirect, useActionData } from 'remix';
 import { getUserId, requireUserId } from '~/utils/session.server';
 import { db } from '~/utils/db.server';
+
+// NOTE: Form from Remix enhances the default form, adding preventDefault() which means more control over focus when an error message is displayed, etc.
 
 export const loader: LoaderFunction = async ({ request }) => {
 	const userId = await getUserId(request);
@@ -69,7 +78,7 @@ export default function NewJokeRoute() {
 	return (
 		<div>
 			<p>Add your own hilarious joke</p>
-			<form method='post'>
+			<Form method='post'>
 				<div>
 					<label>
 						Name:{' '}
@@ -118,7 +127,7 @@ export default function NewJokeRoute() {
 						Add
 					</button>
 				</div>
-			</form>
+			</Form>
 		</div>
 	);
 }

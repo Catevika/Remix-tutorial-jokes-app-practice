@@ -11,6 +11,8 @@ export const links: LinksFunction = () => {
 	return [{ rel: 'stylesheet', href: stylesUrl }];
 };
 
+// NOTE: prefetch='intent' on a Link works to preload its content when the link is just hovered over in case it is visited later. Awesome in case of a slow network connection, the navigation seems natural instead of too long as for other sites
+
 type LoaderData = {
 	user: Awaited<ReturnType<typeof getUser>>;
 	jokeListItems: Array<{ id: string; name: string }>;
@@ -63,12 +65,16 @@ export default function JokesRoute() {
 			<main className='jokes-main'>
 				<div className='container'>
 					<div className='jokes-list'>
-						<Link to='.'>Get a random joke</Link>
+						<Link prefetch='intent' to='.'>
+							Get a random joke
+						</Link>
 						<p>Here are a few more jokes to check out:</p>
 						<ul>
 							{data.jokeListItems.map((joke) => (
 								<li key={joke.id}>
-									<Link to={joke.id}>{joke.name}</Link>
+									<Link prefetch='intent' to={joke.id}>
+										{joke.name}
+									</Link>
 								</li>
 							))}
 						</ul>
