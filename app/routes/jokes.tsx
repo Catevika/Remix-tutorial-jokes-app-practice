@@ -20,7 +20,7 @@ export const loader: LoaderFunction = async ({ request }) => {
 	const user = await getUser(request);
 	// * With Prisma
 	const jokeListItems = await db.joke.findMany({
-		take: 5,
+		// take: 5,
 		select: {
 			id: true,
 			name: true
