@@ -1,16 +1,17 @@
-import type { LinksFunction, MetaFunction } from 'remix';
 import { Link } from 'remix';
-
+import type { LinksFunction, MetaFunction } from 'remix';
 import stylesUrl from '~/styles/index.css';
+
+export const meta: MetaFunction = () => {
+	return {
+		title: "Remix: It's funny!",
+		description: 'Remix jokes app. Learn Remix and laugh at the same time!'
+	};
+};
 
 export const links: LinksFunction = () => {
 	return [{ rel: 'stylesheet', href: stylesUrl }];
 };
-
-export const meta: MetaFunction = () => ({
-	title: "Remix: So great, it's funny!",
-	description: 'Remix jokes app. Learn Remix and laugh at the same time!'
-});
 
 export default function Index() {
 	return (
@@ -23,6 +24,11 @@ export default function Index() {
 					<ul>
 						<li>
 							<Link to='jokes'>Read Jokes</Link>
+						</li>
+						<li>
+							<Link reloadDocument to='/jokes.rss'>
+								RSS
+							</Link>
 						</li>
 					</ul>
 				</nav>

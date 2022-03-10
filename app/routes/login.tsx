@@ -5,15 +5,15 @@ import { db } from '~/utils/db.server';
 import { createUserSession, login, register } from '~/utils/session.server';
 import stylesUrl from '~/styles/login.css';
 
-export const links: LinksFunction = () => {
-	return [{ rel: 'stylesheet', href: stylesUrl }];
-};
-
 export const meta: MetaFunction = () => {
 	return {
 		title: 'Remix Jokes | Login',
 		description: 'Login to submit your own jokes to Remix Jokes!'
 	};
+};
+
+export const links: LinksFunction = () => {
+	return [{ rel: 'stylesheet', href: stylesUrl }];
 };
 
 function validateUsername(username: unknown) {
@@ -30,17 +30,15 @@ function validatePassword(password: unknown) {
 
 type ActionData = {
 	formError?: string;
-	fieldErrors?: {
-		username: string | undefined;
-		password: string | undefined;
-	};
-	fields?: {
-		loginType: string;
-		username: string;
-		password: string;
-	};
+	fieldErrors?: { username: string | undefined; password: string | undefined };
+	fields?: { loginType: string; username: string; password: string };
 };
 
+/**
+ * This helper function gives us typechecking for our ActionData return
+ * statements, while still returning the accurate HTTP status, 400 Bad Request,
+ * to the client.
+ */
 const badRequest = (data: ActionData) => json(data, { status: 400 });
 
 export const action: ActionFunction = async ({ request }) => {
@@ -55,9 +53,7 @@ export const action: ActionFunction = async ({ request }) => {
 		typeof password !== 'string' ||
 		typeof redirectTo !== 'string'
 	) {
-		return badRequest({
-			formError: 'Form not submitted correctly.'
-		});
+		return badRequest({ formError: 'Form not submitted correctly.' });
 	}
 
 	const fields = { loginType, username, password };
@@ -65,8 +61,9 @@ export const action: ActionFunction = async ({ request }) => {
 		username: validateUsername(username),
 		password: validatePassword(password)
 	};
-	if (Object.values(fieldErrors).some(Boolean))
+	if (Object.values(fieldErrors).some(Boolean)) {
 		return badRequest({ fieldErrors, fields });
+	}
 
 	switch (loginType) {
 		case 'login': {
@@ -95,14 +92,17 @@ export const action: ActionFunction = async ({ request }) => {
 					formError: `User with username ${username} already exists`
 				});
 			}
-			let user = await register({ username, password });
+			const user = await register({ username, password });
+			if (!user) {
+				return badRequest({
+					fields,
+					formError: 'Something went wrong trying to create a new user.'
+				});
+			}
 			return createUserSession(user.id, redirectTo);
 		}
 		default: {
-			return badRequest({
-				fields,
-				formError: 'Login type invalid'
-			});
+			return badRequest({ fields, formError: 'Login type invalid' });
 		}
 	}
 };
@@ -175,9 +175,7 @@ export default function Login() {
 							autoComplete='current-password'
 							defaultValue={actionData?.fields?.password}
 							type='password'
-							aria-invalid={
-								Boolean(actionData?.fieldErrors?.password) || undefined
-							}
+							aria-invalid={Boolean(actionData?.fieldErrors?.password)}
 							aria-errormessage={
 								actionData?.fieldErrors?.password ? 'password-error' : undefined
 							}

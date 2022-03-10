@@ -1,11 +1,9 @@
 import type { LoaderFunction, LinksFunction } from 'remix';
-import { useLoaderData } from 'remix';
-import { Outlet, Link } from 'remix';
-
-import stylesUrl from '~/styles/jokes.css';
-
+import { json, Form } from 'remix';
+import { Outlet, useLoaderData, Link } from 'remix';
 import { db } from '~/utils/db.server';
 import { getUser } from '~/utils/session.server';
+import stylesUrl from '~/styles/jokes.css';
 
 export const links: LinksFunction = () => {
 	return [{ rel: 'stylesheet', href: stylesUrl }];
@@ -20,20 +18,29 @@ type LoaderData = {
 
 export const loader: LoaderFunction = async ({ request }) => {
 	const user = await getUser(request);
+
+	// in the official deployed version of the app, we don't want to deploy
+	// a site with unmoderated content, so we only show users their own jokes
 	// * With Prisma
-	const jokeListItems = await db.joke.findMany({
-		// take: 5,
-		select: {
-			id: true,
-			name: true
-		},
-		orderBy: { createdAt: 'desc' }
-	});
+	const jokeListItems = user
+		? await db.joke.findMany({
+				take: 5,
+				select: { id: true, name: true },
+				where: { jokesterId: user.id },
+				orderBy: { createdAt: 'desc' }
+		  })
+		: [];
+
 	// * Without Prisma
 	// const jokes = await db.joke.findMany();
 	//const jokeListItems = jokes.map((joke) => ({ id: joke.id, name: joke.name }));
-	const data: LoaderData = { jokeListItems, user };
-	return data;
+
+	const data: LoaderData = {
+		jokeListItems,
+		user
+	};
+
+	return json(data);
 };
 
 export default function JokesRoute() {
@@ -51,11 +58,11 @@ export default function JokesRoute() {
 					{data.user ? (
 						<div className='user-info'>
 							<span>{`Hi ${data.user.username}`}</span>
-							<form action='/logout' method='post'>
+							<Form action='/logout' method='post'>
 								<button type='submit' className='button'>
 									Logout
 								</button>
-							</form>
+							</Form>
 						</div>
 					) : (
 						<Link to='/login'>Login</Link>
@@ -65,28 +72,37 @@ export default function JokesRoute() {
 			<main className='jokes-main'>
 				<div className='container'>
 					<div className='jokes-list'>
-						<Link prefetch='intent' to='.'>
-							Get a random joke
-						</Link>
-						<p>Here are a few more jokes to check out:</p>
-						<ul>
-							{data.jokeListItems.map((joke) => (
-								<li key={joke.id}>
-									<Link prefetch='intent' to={joke.id}>
-										{joke.name}
-									</Link>
-								</li>
-							))}
-						</ul>
-						<Link to='new' className='button'>
-							Add your own
-						</Link>
+						{data.jokeListItems.length ? (
+							<>
+								<Link to='.'>Get a random joke</Link>
+								<p>Here are a few more jokes to check out:</p>
+								<ul>
+									{data.jokeListItems.map(({ id, name }) => (
+										<li key={id}>
+											<Link to={id} prefetch='intent'>
+												{name}
+											</Link>
+										</li>
+									))}
+								</ul>
+								<Link to='new' className='button'>
+									Add your own
+								</Link>
+							</>
+						) : null}
 					</div>
 					<div className='jokes-outlet'>
 						<Outlet />
 					</div>
 				</div>
 			</main>
+			<footer className='jokes-footer'>
+				<div className='container'>
+					<Link reloadDocument to='/jokes.rss'>
+						RSS
+					</Link>
+				</div>
+			</footer>
 		</div>
 	);
 }

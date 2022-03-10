@@ -1,18 +1,12 @@
-import { LinksFunction, Meta, MetaFunction, Scripts } from 'remix';
-import { Links, LiveReload, Outlet, useCatch } from 'remix';
-
+import { Links, LiveReload, Meta, Outlet, Scripts, useCatch } from 'remix';
+import type { LinksFunction, MetaFunction } from 'remix';
 import globalStylesUrl from './styles/global.css';
 import globalMediumStylesUrl from './styles/global-medium.css';
 import globalLargeStylesUrl from './styles/global-large.css';
 
-// NOTE: Scripts from Remix includes JavaScript but all the application is available before Javascript loads because all is server side rendered
-
 export const links: LinksFunction = () => {
 	return [
-		{
-			rel: 'stylesheet',
-			href: globalStylesUrl
-		},
+		{ rel: 'stylesheet', href: globalStylesUrl },
 		{
 			rel: 'stylesheet',
 			href: globalMediumStylesUrl,
@@ -27,7 +21,7 @@ export const links: LinksFunction = () => {
 };
 
 export const meta: MetaFunction = () => {
-	const description = `Learn Remix and laugh at the same time!`;
+	const description = 'Learn Remix and laugh at the same time!';
 	return {
 		description,
 		keywords: 'Remix,jokes',
@@ -41,7 +35,7 @@ export const meta: MetaFunction = () => {
 };
 
 function Document({
-	title = `Remix: So great, it's funny!`,
+	title,
 	children
 }: {
 	title?: string;
@@ -50,9 +44,10 @@ function Document({
 	return (
 		<html lang='en'>
 			<head>
+				<meta name='viewport' content='width=device-width, initial-scale=1.0' />
 				<meta charSet='utf-8' />
 				<Meta />
-				<title>{title}</title>
+				{title ? <title>{title}</title> : null}
 				<Links />
 			</head>
 			<body>
@@ -87,6 +82,8 @@ export function CatchBoundary() {
 }
 
 export function ErrorBoundary({ error }: { error: Error }) {
+	console.error(error);
+
 	return (
 		<Document title='Uh-oh!'>
 			<div className='error-container'>

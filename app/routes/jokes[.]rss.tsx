@@ -1,21 +1,7 @@
 import type { LoaderFunction } from 'remix';
-
 import { db } from '~/utils/db.server';
 
 // NOTE: This is an rss file but it should be an image, an SVG, a pdf file, a streaming, any ressource possible
-
-function escapeCdata(s: string) {
-	return s.replace(/\]\]>/g, ']]]]><![CDATA[>');
-}
-
-function escapeHtml(s: string) {
-	return s
-		.replace(/&/g, '&amp;')
-		.replace(/</g, '&lt;')
-		.replace(/>/g, '&gt;')
-		.replace(/"/g, '&quot;')
-		.replace(/'/g, '&#039;');
-}
 
 export const loader: LoaderFunction = async ({ request }) => {
 	const jokes = await db.joke.findMany({
@@ -46,14 +32,10 @@ export const loader: LoaderFunction = async ({ request }) => {
 					.map((joke) =>
 						`
             <item>
-              <title><![CDATA[${escapeCdata(joke.name)}]]></title>
-              <description><![CDATA[A funny joke called ${escapeHtml(
-								joke.name
-							)}]]></description>
-              <author><![CDATA[${escapeCdata(
-								joke.jokester.username
-							)}]]></author>
-              <pubDate>${joke.createdAt.toUTCString()}</pubDate>
+              <title>${joke.name}</title>
+              <description>A funny joke called ${joke.name}</description>
+              <author>${joke.jokester.username}</author>
+              <pubDate>${joke.createdAt}</pubDate>
               <link>${jokesUrl}/${joke.id}</link>
               <guid>${jokesUrl}/${joke.id}</guid>
             </item>

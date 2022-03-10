@@ -1,14 +1,16 @@
+import type { ActionFunction, LoaderFunction } from 'remix';
 import {
-	ActionFunction,
-	json,
 	Link,
-	LoaderFunction,
 	useCatch,
-	Form
+	useActionData,
+	Form,
+	redirect,
+	useTransition,
+	json
 } from 'remix';
-import { redirect, useActionData } from 'remix';
-import { getUserId, requireUserId } from '~/utils/session.server';
+import { JokeDisplay } from '~/components/joke';
 import { db } from '~/utils/db.server';
+import { getUserId, requireUserId } from '~/utils/session.server';
 
 // NOTE: Form from Remix enhances the default form, adding preventDefault() which means more control over focus when an error message is displayed, etc.
 
@@ -34,28 +36,28 @@ function validateJokeContent(content: string) {
 
 type ActionData = {
 	formError?: string;
+	fieldErrors?: { name: string | undefined; content: string | undefined };
 	fields?: {
-		name?: string;
-		content?: string;
-	};
-	fieldErrors?: {
-		name?: string;
-		content?: string;
+		name: string;
+		content: string;
 	};
 };
 
-export const action: ActionFunction = async ({
-	request
-}): Promise<Response | ActionData> => {
+/**
+ * This helper function gives us typechecking for our ActionData return
+ * statements, while still returning the accurate HTTP status, 400 Bad Request,
+ * to the client.
+ */
+const badRequest = (data: ActionData) => json(data, { status: 400 });
+
+export const action: ActionFunction = async ({ request }) => {
 	const userId = await requireUserId(request);
+
 	const form = await request.formData();
 	const name = form.get('name');
 	const content = form.get('content');
-
 	if (typeof name !== 'string' || typeof content !== 'string') {
-		return {
-			formError: 'Form submitted incorrectly'
-		};
+		return badRequest({ formError: `Form not submitted correctly.` });
 	}
 
 	const fieldErrors = {
@@ -63,18 +65,42 @@ export const action: ActionFunction = async ({
 		content: validateJokeContent(content)
 	};
 
+	const fields = { name, content };
 	if (Object.values(fieldErrors).some(Boolean)) {
-		return { fieldErrors, fields: { name, content } };
+		return badRequest({ fieldErrors, fields });
 	}
 
 	const joke = await db.joke.create({
-		data: { name, content, jokesterId: userId }
+		data: { ...fields, jokesterId: userId }
 	});
-	return redirect(`/jokes/${joke.id}`);
+	return redirect(`/jokes/${joke.id}?redirectTo=/jokes/new`);
 };
+
+// NOTE: useTransition for form submission - or anytime a spinner would have been used for something else - is the best optimization for a UI. It allows to display the entered data until the action of submitting is over!!!
 
 export default function NewJokeRoute() {
 	const actionData = useActionData<ActionData>();
+	const transition = useTransition();
+
+	if (transition.submission) {
+		const name = transition.submission.formData.get('name');
+		const content = transition.submission.formData.get('content');
+		if (
+			typeof name === 'string' &&
+			typeof content === 'string' &&
+			!validateJokeContent(content) &&
+			!validateJokeName(name)
+		) {
+			return (
+				<JokeDisplay
+					joke={{ name, content }}
+					isOwner={true}
+					canDelete={false}
+				/>
+			);
+		}
+	}
+
 	return (
 		<div>
 			<p>Add your own hilarious joke</p>
@@ -86,7 +112,7 @@ export default function NewJokeRoute() {
 							type='text'
 							defaultValue={actionData?.fields?.name}
 							name='name'
-							aria-invalid={Boolean(actionData?.fieldErrors?.name) || undefined}
+							aria-invalid={Boolean(actionData?.fieldErrors?.name)}
 							aria-errormessage={
 								actionData?.fieldErrors?.name ? 'name-error' : undefined
 							}
@@ -104,9 +130,7 @@ export default function NewJokeRoute() {
 						<textarea
 							defaultValue={actionData?.fields?.content}
 							name='content'
-							aria-invalid={
-								Boolean(actionData?.fieldErrors?.content) || undefined
-							}
+							aria-invalid={Boolean(actionData?.fieldErrors?.content)}
 							aria-errormessage={
 								actionData?.fieldErrors?.content ? 'content-error' : undefined
 							}
@@ -123,6 +147,11 @@ export default function NewJokeRoute() {
 					) : null}
 				</div>
 				<div>
+					{actionData?.formError ? (
+						<p className='form-validation-error' role='alert'>
+							{actionData.formError}
+						</p>
+					) : null}
 					<button type='submit' className='button'>
 						Add
 					</button>
@@ -139,13 +168,15 @@ export function CatchBoundary() {
 		return (
 			<div className='error-container'>
 				<p>You must be logged in to create a joke.</p>
-				<Link to='/login'>Login</Link>
+				<Link to='/login?redirectTo=/jokes/new'>Login</Link>
 			</div>
 		);
 	}
+	throw new Error(`Unexpected caught response with status: ${caught.status}`);
 }
 
-export function ErrorBoundary() {
+export function ErrorBoundary({ error }: { error: Error }) {
+	console.error(error);
 	return (
 		<div className='error-container'>
 			Something unexpected went wrong. Sorry about that.
